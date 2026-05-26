@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-800 text-gray-100 font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track  { background: #09090f; }
+  ::-webkit-scrollbar-thumb  { background: #26263a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #6d8bff55; }
+}
+
+@layer components {
+  /* Method badge colours */
+  .method-GET     { @apply bg-emerald-500/15 text-emerald-400 border border-emerald-500/30; }
+  .method-POST    { @apply bg-blue-500/15    text-blue-400    border border-blue-500/30;    }
+  .method-PUT     { @apply bg-amber-500/15   text-amber-400   border border-amber-500/30;   }
+  .method-PATCH   { @apply bg-violet-500/15  text-violet-400  border border-violet-500/30;  }
+  .method-DELETE  { @apply bg-red-500/15     text-red-400     border border-red-500/30;     }
+  .method-OPTIONS { @apply bg-gray-500/15    text-gray-400    border border-gray-500/30;    }
+  .method-HEAD    { @apply bg-gray-500/15    text-gray-400    border border-gray-500/30;    }
+
+  .glass-card {
+    @apply bg-surface-800 border border-surface-600 rounded-xl;
+  }
+
+  .input-field {
+    @apply w-full bg-surface-700 border border-surface-600 rounded-lg px-4 py-2.5
+           text-gray-100 placeholder-gray-500 font-mono text-sm
+           focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
+           transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-dim text-white font-medium px-5 py-2.5 rounded-lg
+           transition-all duration-200 hover:shadow-lg hover:shadow-accent/20
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-surface-700 hover:bg-surface-600 text-gray-300 font-medium px-5 py-2.5 rounded-lg
+           border border-surface-600 transition-all duration-200
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
