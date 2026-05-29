@@ -150,7 +150,7 @@ function SpecInput({ label, value, onChange, placeholder, badge, badgeClass }) {
     <div>
       <div className="flex items-center gap-2 mb-1.5">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</label>
-        <span className={`text-[10px] font-mono font-bold border px-1.5 py-0.5 rounded ${badgeClass}`}>{badge}</span>
+        
       </div>
       <input
         type="url"
