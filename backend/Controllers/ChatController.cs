@@ -10,26 +10,42 @@ namespace ApiDocAssistant.Controllers;
 public class ChatController(SpecService specService, OpenAIService openAIService) : ControllerBase
 {
     /// <summary>
-    /// Sends a chat message about a given OpenAPI spec to Azure OpenAI.
-    /// POST /api/chat  { "specUrl": "...", "messages": [...] }
+    /// Chat with AI about an API spec.
+    /// Accepts specUrl (fetch from URL) or specContent (uploaded file text).
+    /// POST /api/chat
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> Chat([FromBody] ChatRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.SpecUrl))
-            return BadRequest(new ErrorResponse { Error = "specUrl is required." });
+        var hasUrl     = !string.IsNullOrWhiteSpace(request.SpecUrl);
+        var hasContent = !string.IsNullOrWhiteSpace(request.SpecContent);
+
+        if (!hasUrl && !hasContent)
+            return BadRequest(new ErrorResponse { Error = "Provide either specUrl or specContent." });
 
         if (request.Messages is null || request.Messages.Count == 0)
             return BadRequest(new ErrorResponse { Error = "At least one message is required." });
 
+        // ── Step 1: Obtain the parsed spec ────────────────────────────────────
+        ParsedSpec parsed;
         try
         {
-            // Fetch and parse the spec to use as AI context
-            var parsed = await specService.FetchAndParseAsync(request.SpecUrl);
-            var specJson = JsonSerializer.Serialize(parsed, new JsonSerializerOptions
+            parsed = hasContent
+                ? specService.Parse(request.SpecContent!)
+                : await specService.FetchAndParseAsync(request.SpecUrl!);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ErrorResponse
             {
-                WriteIndented = false
+                Error = $"Failed to fetch/parse spec: {ex.Message}"
             });
+        }
+
+        // ── Step 2: Call Azure AI ─────────────────────────────────────────────
+        try
+        {
+            var specJson = JsonSerializer.Serialize(parsed);
 
             var systemPrompt = $"""
                 You are an expert API documentation assistant. You have been given the following OpenAPI/Swagger specification in JSON format.
@@ -40,7 +56,7 @@ public class ChatController(SpecService specService, OpenAIService openAIService
                 Your responsibilities:
                 - Answer questions about this API clearly, accurately, and concisely
                 - Explain endpoint purposes, parameters, and expected responses
-                - Provide code examples (curl, JavaScript fetch, Python requests, etc.) when they would be helpful
+                - Provide code examples (curl, JavaScript fetch, Python requests, etc.) when helpful
                 - Explain authentication requirements if present
                 - Help debug integration issues
                 - If a question is unrelated to this API, politely redirect to API-related topics
@@ -52,17 +68,9 @@ public class ChatController(SpecService specService, OpenAIService openAIService
             var reply = await openAIService.CompleteAsync(systemPrompt, request.Messages);
             return Ok(new AiResponse { Message = reply });
         }
-        catch (HttpRequestException ex)
-        {
-            return BadRequest(new ErrorResponse { Error = $"Failed to fetch spec: {ex.Message}" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ErrorResponse { Error = $"Failed to parse spec: {ex.Message}" });
-        }
         catch (Exception ex)
         {
-            return StatusCode(500, new ErrorResponse { Error = ex.Message });
+            return StatusCode(500, new ErrorResponse { Error = $"Azure OpenAI error: {ex.Message}" });
         }
     }
 }

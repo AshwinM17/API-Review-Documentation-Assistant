@@ -1,113 +1,91 @@
 import { useState } from 'react'
 import { chatWithSpec } from '../api/client'
+import SpecSourceInput from '../components/SpecSourceInput'
 import ChatWindow from '../components/ChatWindow'
 
 export default function Chat() {
-  const [specUrl, setSpecUrl]     = useState('')
-  const [activeUrl, setActiveUrl] = useState('')
+  const [source, setSource]       = useState(null)
+  const [activeSource, setActive] = useState(null)
   const [messages, setMessages]   = useState([])
   const [loading, setLoading]     = useState(false)
-  const [urlError, setUrlError]   = useState(null)
   const [chatError, setChatError] = useState(null)
 
-  const isReady = Boolean(activeUrl)
-
-  function handleLoadSpec(e) {
+  function handleLoad(e) {
     e?.preventDefault()
-    const url = specUrl.trim()
-    if (!url) return
-    setActiveUrl(url)
+    if (!source) return
+    setActive(source)
     setMessages([])
-    setUrlError(null)
     setChatError(null)
   }
 
   async function handleSend(text) {
-    if (!activeUrl) return
-
+    if (!activeSource) return
     const userMsg = { role: 'user', content: text }
-    const newMessages = [...messages, userMsg]
-    setMessages(newMessages)
+    const next = [...messages, userMsg]
+    setMessages(next)
     setLoading(true)
     setChatError(null)
-
     try {
-      const data = await chatWithSpec(activeUrl, newMessages)
-      setMessages([...newMessages, { role: 'assistant', content: data.message }])
+      const data = await chatWithSpec(activeSource, next)
+      setMessages([...next, { role: 'assistant', content: data.message }])
     } catch (err) {
       setChatError(err.message)
-      // Remove the optimistically-added user message on error
       setMessages(messages)
     } finally {
       setLoading(false)
     }
   }
 
-  function handleClearChat() {
-    setMessages([])
-    setChatError(null)
-  }
+  const sourceLabel = activeSource
+    ? (activeSource.type === 'file' ? `File: ${activeSource.filename}` : activeSource.value)
+    : null
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
-      {/* Spec URL bar */}
+      {/* Spec source bar */}
       <div className="border-b border-surface-700 bg-surface-900/60 backdrop-blur-sm px-4 py-3 shrink-0">
-        <form onSubmit={handleLoadSpec} className="max-w-4xl mx-auto flex gap-3 items-end">
+        <form onSubmit={handleLoad} className="max-w-4xl mx-auto flex gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              OpenAPI / Swagger URL
-            </label>
-            <input
-              type="url"
-              value={specUrl}
-              onChange={(e) => setSpecUrl(e.target.value)}
+            <SpecSourceInput
+              label="OpenAPI / Swagger Spec"
               placeholder="https://petstore3.swagger.io/api/v3/openapi.json"
-              className="input-field w-full"
-              required
+              onChange={setSource}
             />
           </div>
-          <button type="submit" className="btn-primary shrink-0">
-            {activeUrl ? 'Change Spec' : 'Load Spec'}
-          </button>
-          {messages.length > 0 && (
-            <button type="button" onClick={handleClearChat} className="btn-ghost shrink-0">
-              Clear
+          <div className="flex gap-2 shrink-0 self-end">
+            <button type="submit" disabled={!source} className="btn-primary">
+              {activeSource ? 'Change' : 'Load Spec'}
             </button>
-          )}
+            {messages.length > 0 && (
+              <button type="button" onClick={() => setMessages([])} className="btn-ghost">
+                Clear
+              </button>
+            )}
+          </div>
         </form>
 
-        {/* Active spec indicator */}
-        {activeUrl && (
+        {activeSource && (
           <div className="max-w-4xl mx-auto mt-2 flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-slow" />
-            <span className="text-xs text-gray-500 font-mono truncate">{activeUrl}</span>
+            <span className="text-xs text-gray-500 font-mono truncate">{sourceLabel}</span>
           </div>
         )}
 
-        {/* Chat error */}
         {chatError && (
-          <div className="max-w-4xl mx-auto mt-2 flex items-center gap-2 text-red-400 text-xs">
-            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {chatError}
-          </div>
+          <p className="max-w-4xl mx-auto mt-2 text-xs text-red-400 flex items-center gap-1">
+            <span>⚠</span> {chatError}
+          </p>
         )}
       </div>
 
-      {/* Main area */}
-      {!isReady ? (
+      {!activeSource ? (
         <div className="flex-1 flex items-center justify-center">
           <EmptyState />
         </div>
       ) : (
         <div className="flex-1 min-h-0 max-w-4xl w-full mx-auto">
-          <ChatWindow
-            messages={messages}
-            onSend={handleSend}
-            loading={loading}
-            placeholder="Ask anything about this API…"
-          />
+          <ChatWindow messages={messages} onSend={handleSend} loading={loading}
+            placeholder="Ask anything about this API..." />
         </div>
       )}
     </div>
@@ -125,15 +103,11 @@ function EmptyState() {
       <div>
         <h3 className="text-gray-200 font-semibold mb-1">Start a conversation</h3>
         <p className="text-gray-500 text-sm leading-relaxed">
-          Enter an OpenAPI/Swagger URL above and click <strong className="text-gray-400">Load Spec</strong> to begin chatting with an AI assistant about the API.
+          Enter a URL or upload a spec file, then click <strong className="text-gray-400">Load Spec</strong> to chat with the AI about the API.
         </p>
       </div>
       <div className="text-left space-y-2">
-        {[
-          'What endpoints are available?',
-          'How do I authenticate with this API?',
-          'Show me a curl example for POST /users',
-        ].map((q) => (
+        {["What endpoints are available?","How do I authenticate?","Show me a curl example for POST /users"].map(q => (
           <div key={q} className="flex items-start gap-2 text-xs text-gray-600">
             <span className="text-accent mt-0.5">›</span>
             <span>"{q}"</span>

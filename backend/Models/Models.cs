@@ -4,25 +4,40 @@ namespace ApiDocAssistant.Models;
 
 public class SpecRequest
 {
-    public string Url { get; set; } = string.Empty;
+    /// <summary>Public URL to fetch the spec from.</summary>
+    public string? Url { get; set; }
+
+    /// <summary>Raw spec text (JSON or YAML) when the user uploads a file.</summary>
+    public string? Content { get; set; }
 }
 
 public class ChatRequest
 {
-    public string SpecUrl { get; set; } = string.Empty;
+    /// <summary>Public URL to fetch the spec from.</summary>
+    public string? SpecUrl { get; set; }
+
+    /// <summary>Raw spec text when the user uploads a file instead of a URL.</summary>
+    public string? SpecContent { get; set; }
+
     public List<ChatMessage> Messages { get; set; } = new();
 }
 
 public class CompareRequest
 {
-    public string SpecUrl1 { get; set; } = string.Empty;
-    public string SpecUrl2 { get; set; } = string.Empty;
+    // Spec 1 — either a URL or uploaded content
+    public string? SpecUrl1 { get; set; }
+    public string? SpecContent1 { get; set; }
+
+    // Spec 2 — either a URL or uploaded content
+    public string? SpecUrl2 { get; set; }
+    public string? SpecContent2 { get; set; }
+
     public List<ChatMessage> Messages { get; set; } = new();
 }
 
 public class ChatMessage
 {
-    public string Role { get; set; } = string.Empty;   // "user" | "assistant"
+    public string Role { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 }
 
@@ -54,7 +69,7 @@ public class ParsedEndpoint
 public class ParsedParameter
 {
     public string Name { get; set; } = string.Empty;
-    public string In { get; set; } = string.Empty;        // path | query | header | cookie
+    public string In { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public bool Required { get; set; }
     public string Type { get; set; } = string.Empty;

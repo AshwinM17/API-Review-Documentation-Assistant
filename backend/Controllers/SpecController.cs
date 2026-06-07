@@ -9,33 +9,35 @@ namespace ApiDocAssistant.Controllers;
 public class SpecController(SpecService specService) : ControllerBase
 {
     /// <summary>
-    /// Fetches and parses an OpenAPI/Swagger spec from a URL.
-    /// POST /api/spec/view  { "url": "https://..." }
+    /// Fetches/parses an OpenAPI spec.
+    /// Accepts either { "url": "https://..." } or { "content": "raw yaml/json text" }.
+    /// POST /api/spec/view
     /// </summary>
     [HttpPost("view")]
     public async Task<IActionResult> View([FromBody] SpecRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Url))
-            return BadRequest(new ErrorResponse { Error = "URL is required." });
+        // Validate — exactly one of url or content must be provided
+        var hasUrl     = !string.IsNullOrWhiteSpace(request.Url);
+        var hasContent = !string.IsNullOrWhiteSpace(request.Content);
+
+        if (!hasUrl && !hasContent)
+            return BadRequest(new ErrorResponse { Error = "Provide either a URL or file content." });
 
         try
         {
-            var parsed = await specService.FetchAndParseAsync(request.Url);
+            var parsed = hasContent
+                ? specService.Parse(request.Content!)
+                : await specService.FetchAndParseAsync(request.Url!);
+
             return Ok(parsed);
         }
         catch (HttpRequestException ex)
         {
-            return BadRequest(new ErrorResponse
-            {
-                Error = $"Failed to fetch spec from URL: {ex.Message}"
-            });
+            return BadRequest(new ErrorResponse { Error = $"Failed to fetch spec: {ex.Message}" });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new ErrorResponse
-            {
-                Error = $"Failed to parse OpenAPI spec: {ex.Message}"
-            });
+            return BadRequest(new ErrorResponse { Error = $"Failed to parse spec: {ex.Message}" });
         }
         catch (Exception ex)
         {

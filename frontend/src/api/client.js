@@ -16,14 +16,51 @@ async function request(path, body) {
   return data
 }
 
-/** Fetch and parse an OpenAPI spec by URL */
-export const viewSpec = (url) =>
-  request('/spec/view', { url })
+// ─── Source helpers ────────────────────────────────────────────────────────────
+// A "source" is either { type: 'url',  value: 'https://...' }
+//                   or { type: 'file', value: '<raw json/yaml text>', filename: 'api.json' }
 
-/** Chat with an AI assistant about an API spec */
-export const chatWithSpec = (specUrl, messages) =>
-  request('/chat', { specUrl, messages })
+function specPayload(source) {
+  return source.type === 'file'
+    ? { content: source.value }
+    : { url: source.value }
+}
 
-/** Compare two API specs via AI */
-export const compareSpecs = (specUrl1, specUrl2, messages) =>
-  request('/compare', { specUrl1, specUrl2, messages })
+function chatSpecPayload(source) {
+  return source.type === 'file'
+    ? { specContent: source.value }
+    : { specUrl: source.value }
+}
+
+function compareSpecPayload(source1, source2) {
+  const s1 = source1.type === 'file'
+    ? { specContent1: source1.value }
+    : { specUrl1: source1.value }
+  const s2 = source2.type === 'file'
+    ? { specContent2: source2.value }
+    : { specUrl2: source2.value }
+  return { ...s1, ...s2 }
+}
+
+// ─── Public API ────────────────────────────────────────────────────────────────
+
+/** View/parse a spec.  source = { type: 'url'|'file', value: string } */
+export const viewSpec = (source) =>
+  request('/spec/view', specPayload(source))
+
+/** Chat about a spec. */
+export const chatWithSpec = (source, messages) =>
+  request('/chat', { ...chatSpecPayload(source), messages })
+
+/** Compare two specs. */
+export const compareSpecs = (source1, source2, messages) =>
+  request('/compare', { ...compareSpecPayload(source1, source2), messages })
+
+/** Read a File object as a UTF-8 string. */
+export const readFileAsText = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = (e) => resolve(e.target.result)
+    reader.onerror = ()  => reject(new Error('Failed to read file'))
+    reader.readAsText(file)
+  })
