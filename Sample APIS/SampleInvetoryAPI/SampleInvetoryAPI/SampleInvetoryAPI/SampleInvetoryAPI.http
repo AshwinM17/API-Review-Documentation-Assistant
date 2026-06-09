@@ -1,0 +1,6 @@
+@SampleInvetoryAPI_HostAddress = http://localhost:5193
+
+GET {{SampleInvetoryAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

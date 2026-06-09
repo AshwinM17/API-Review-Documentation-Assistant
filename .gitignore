@@ -1,1 +1,16 @@
 backend/appsettings.json
+
+
+Sample APIS/**/bin/
+
+Sample APIS/**/obj/
+Sample APIS/**/packages/
+Sample APIS/**/TestResults/
+Sample APIS/**/*.user
+Sample APIS/**/*.csproj.user
+Sample APIS/**/*.suo
+Sample APIS/**/*.pdb
+Sample APIS/**/*.cache
+Sample APIS/**/.vs/
+Sample APIS/.idea/
+Sample APIS/**/appsettings*.json
