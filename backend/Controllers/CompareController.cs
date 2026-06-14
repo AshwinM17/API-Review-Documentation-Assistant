@@ -85,6 +85,8 @@ public class CompareController(SpecService specService, OpenAIService openAIServ
                 - Answer follow-up questions about specific differences
 
                 Format your response with clear markdown sections.
+
+                Do not answer any questionswwhich do not relate to the API differences. If asked irrelevant questions, politely decline and steer the conversation back to the API comparison.
                 """;
 
             var reply = await openAIService.CompleteAsync(systemPrompt, request.Messages);
