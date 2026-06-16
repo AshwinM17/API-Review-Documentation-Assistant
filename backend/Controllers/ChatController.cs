@@ -63,6 +63,8 @@ public class ChatController(SpecService specService, OpenAIService openAIService
 
                 Always format code in proper markdown code blocks with the correct language tag.
                 Be developer-friendly, practical, and to the point.
+
+                Do not answer any questions wwhich do not relate to the API differences. If asked irrelevant questions, politely decline and steer the conversation back to the API
                 """;
 
             var reply = await openAIService.CompleteAsync(systemPrompt, request.Messages);
